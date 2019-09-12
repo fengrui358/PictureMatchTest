@@ -23,7 +23,7 @@
             <ScrollViewer Grid.Row="1">
                 <TextBlock Text="{Binding TemplateMatchMsg}" TextWrapping="Wrap"/>
             </ScrollViewer>
-            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="ButtonBase_OnClick"/>
+            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="TemplateMatchBtn_OnClick"/>
         </Grid>
     </Grid>
 </Window>

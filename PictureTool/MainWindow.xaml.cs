@@ -3,22 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using Point = OpenCvSharp.Point;
 using Rectangle = System.Drawing.Rectangle;
 using Window = System.Windows.Window;
 
@@ -33,10 +23,22 @@ namespace PictureTool
 
         public string TemplateMatchMsg
         {
-            get { return _templateMatchMsg; }
+            get => _templateMatchMsg;
             set
             {
                 _templateMatchMsg = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private List<TemplateMatchResult> _templateMatchResults;
+
+        public List<TemplateMatchResult> TemplateMatchResults
+        {
+            get => _templateMatchResults;
+            set
+            {
+                _templateMatchResults = value;
                 OnPropertyChanged();
             }
         }
@@ -48,8 +50,9 @@ namespace PictureTool
             DataContext = this;
         }
 
-        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        private void TemplateMatchBtn_OnClick(object sender, RoutedEventArgs e)
         {
+            //todo:使用格式化数据来展示
             var src1 = new Bitmap("Pictures\\Src1.bmp");
             var sub1 = new Bitmap("Pictures\\Sub1.bmp");
             var notMatch1 = new Bitmap("Pictures\\NotMatch.bmp");
@@ -58,18 +61,20 @@ namespace PictureTool
 
             sb.AppendLine("匹配存在图片");
 
+            double minValue;
             double maxValue;
+            Point p;
 
             foreach (TemplateMatchModes value in Enum.GetValues(typeof(TemplateMatchModes)))
             {
-                var rectangle = TemplateMatchLocation(sub1, src1, out maxValue, value);
+                var rectangle = TemplateMatchLocation(sub1, src1, out minValue, out maxValue, out p, value);
                 if (rectangle.HasValue)
                 {
-                    sb.AppendLine($"{nameof(TemplateMatchModes)}:{value} {nameof(maxValue)}:{maxValue} {rectangle}");
+                    sb.AppendLine($"{value} {nameof(minValue)}:{minValue} {nameof(maxValue)}:{maxValue} Point:{p} {rectangle}");
                 }
                 else
                 {
-                    sb.AppendLine($"{nameof(TemplateMatchModes)}:{value} {nameof(maxValue)}:{maxValue} NotFound");
+                    sb.AppendLine($"{value} {nameof(minValue)}:{minValue} {nameof(maxValue)}:{maxValue} Point:{p} NotFound");
                 }
             }
 
@@ -78,14 +83,14 @@ namespace PictureTool
 
             foreach (TemplateMatchModes value in Enum.GetValues(typeof(TemplateMatchModes)))
             {
-                var rectangle = TemplateMatchLocation(notMatch1, src1, out maxValue, value);
+                var rectangle = TemplateMatchLocation(notMatch1, src1, out minValue, out maxValue, out p, value);
                 if (rectangle.HasValue)
                 {
-                    sb.AppendLine($"{nameof(TemplateMatchModes)}:{value} {nameof(maxValue)}:{maxValue} {rectangle}");
+                    sb.AppendLine($"{value} {nameof(minValue)}:{minValue} {nameof(maxValue)}:{maxValue} Point:{p} {rectangle}");
                 }
                 else
                 {
-                    sb.AppendLine($"{nameof(TemplateMatchModes)}:{value} {nameof(maxValue)}:{maxValue} NotFound");
+                    sb.AppendLine($"{value} {nameof(minValue)}:{minValue} {nameof(maxValue)}:{maxValue} Point:{p} NotFound");
                 }
             }
 
@@ -98,36 +103,31 @@ namespace PictureTool
         /// <param name="wantBitmap">Want match bitmap</param>
         /// <param name="bitmap">target bitmap</param>
         /// <param name="templateMatch">template match option</param>
-        /// <param name="cancellationToken">cancellationToken</param>
         /// <returns>Target bitmap location</returns>
-        private Rectangle? TemplateMatchLocation(Bitmap wantBitmap, Bitmap bitmap, out double maxValue,
-            TemplateMatchModes templateMatch, CancellationToken cancellationToken = default)
+        private TemplateMatchResult TemplateMatchLocation(Bitmap wantBitmap, Bitmap bitmap, TemplateMatchModes templateMatch)
         {
-            maxValue = -1;
+            var result = new TemplateMatchResult();
 
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 using (var srcMat = bitmap.ToMat())
                 using (var dstMat = wantBitmap.ToMat())
                 using (var outArray = OutputArray.Create(srcMat))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     Cv2.MatchTemplate(srcMat, dstMat, outArray, templateMatch);
 
-                    cancellationToken.ThrowIfCancellationRequested();
+                    Cv2.MinMaxLoc(InputArray.Create(outArray.GetMat()), out var minValue,
+                        out var maxValue, out var minLoc, out var point);
 
-                    Cv2.MinMaxLoc(InputArray.Create(outArray.GetMat()), out _,
-                        out maxValue, out _, out var point);
+                    result.TemplateMatch = templateMatch;
+                    result.MinValue = minValue;
+                    result.MaxValue = maxValue;
+                    result.MinLocation = minLoc;
+                    result.MaxLocation = point;
 
-                    if (maxValue >= 0.9)
+                    if (maxValue >= 0.9 && maxValue <= 1d)
                     {
-                        var rectangle =
-                            new Rectangle?(new Rectangle(point.X, point.Y, wantBitmap.Width, wantBitmap.Height));
-
-                        return rectangle;
+                        result.Match = true;
                     }
                 }
             }
@@ -136,7 +136,7 @@ namespace PictureTool
                 Debug.WriteLine(ex);
             }
 
-            return null;
+            return result;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
