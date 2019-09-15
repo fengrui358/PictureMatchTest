@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PictureTool"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" WindowState="Maximized">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -20,10 +20,36 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" Text="模板匹配" />
-            <ScrollViewer Grid.Row="1">
-                <TextBlock Text="{Binding TemplateMatchMsg}" TextWrapping="Wrap"/>
-            </ScrollViewer>
-            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="TemplateMatchBtn_OnClick"/>
+            <DataGrid Grid.Row="1" ItemsSource="{Binding TemplateMatchResults}" CanUserDeleteRows="True"
+                      CanUserSortColumns="False" CanUserAddRows="False"
+                      Margin="3" />
+            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="TemplateMatchBtn_OnClick" />
+        </Grid>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="SiftMatch" />
+            <DataGrid Grid.Row="1" ItemsSource="{Binding SiftMatchResults}" CanUserDeleteRows="True"
+                      CanUserSortColumns="False" CanUserAddRows="False"
+                      Margin="3" />
+            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="SiftMatchBtn_OnClick" />
+        </Grid>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="SurfMatch" />
+            <DataGrid Grid.Row="1" ItemsSource="{Binding SurfMatchResults}" CanUserDeleteRows="True"
+                      CanUserSortColumns="False" CanUserAddRows="False"
+                      Margin="3" />
+            <Button Grid.Row="2" Width="100" Height="30" Content="对比" Click="SurfMatchBtn_OnClick" />
         </Grid>
     </Grid>
 </Window>

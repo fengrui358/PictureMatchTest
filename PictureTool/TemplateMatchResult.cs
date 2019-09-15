@@ -14,6 +14,8 @@ namespace PictureTool
 
         public Point? MaxLocation { get; set; }
 
-        public bool Match { get; set; }
+        public string Error { get; set; }
+
+        public bool? Match { get; set; }
     }
 }
