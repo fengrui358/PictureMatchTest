@@ -156,9 +156,7 @@ namespace PictureTool
             var allPics = pictureDir.GetFiles("*", SearchOption.AllDirectories)
                 .Select(s => new BatchMatchResult(s.FullName)).ToList();
 
-            var taskFactory = new TaskFactory(CancellationToken.None, TaskCreationOptions.LongRunning,
-                TaskContinuationOptions.LongRunning, TaskScheduler.Default);
-            taskFactory.StartNew(() =>
+            var t = new Thread(ss =>
             {
                 Parallel.ForEach(allPics, new ParallelOptions
                 {
@@ -245,7 +243,7 @@ namespace PictureTool
                             }
 
                             batchMatchResult.AlgorithmDescription +=
-                                $"  {value} Y{matchMillionSeconds}:N{(int) ((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                $"  {value} Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
                         }
                     }
 
@@ -332,7 +330,7 @@ namespace PictureTool
                         if (match && notMatch)
                         {
                             batchMatchResult.AlgorithmDescription +=
-                                $"  Sift Y{matchMillionSeconds}:N{(int) ((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                $"  Sift Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
                         }
                     }
 
@@ -419,7 +417,7 @@ namespace PictureTool
                         if (match && notMatch)
                         {
                             batchMatchResult.AlgorithmDescription +=
-                                $"  Surf Y{matchMillionSeconds}:N{(int) ((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                $"  Surf Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
                         }
                     }
 
@@ -432,6 +430,8 @@ namespace PictureTool
                         $"共检查{allPics.Count}个文件，失效{allPics.Count(s => string.IsNullOrEmpty(s.AlgorithmDescription))}个");
                 });
             });
+            
+            t.Start();
         }
 
         /// <summary>
