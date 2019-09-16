@@ -25,7 +25,7 @@ namespace PictureTool
         public string AlgorithmDescription
         {
             get => _algorithmDescription.Trim();
-            set { _algorithmDescription = value; }
+            set => _algorithmDescription = value;
         }
 
         public Bitmap GetBitmap()
@@ -42,27 +42,19 @@ namespace PictureTool
                     var x = Random.Next(0, source.Size.Width);
                     var y = Random.Next(0, source.Size.Height);
 
-                    var subWidth = Random.Next(x, source.Size.Width + 1) - x;
-                    var subHeight = Random.Next(y, source.Size.Height + 1) - y;
+                    var subWidth = Random.Next(x + 1, source.Size.Width + 1) - x;
+                    var subHeight = Random.Next(y + 1, source.Size.Height + 1) - y;
 
                     SubRectangle = new Rectangle(x, y, subWidth, subHeight);
                 }
 
-                using (var bmpOut = new Bitmap(SubRectangle.Value.Width, SubRectangle.Value.Height,
-                    PixelFormat.Format32bppArgb))
-                {
-                    var g = Graphics.FromImage(bmpOut);
-                    g.DrawImage(source, new Rectangle(0, 0, bmpOut.Size.Width, bmpOut.Size.Height), SubRectangle.Value,
-                        GraphicsUnit.Pixel);
-                    g.Dispose();
+                var bmpOut = new Bitmap(SubRectangle.Value.Width, SubRectangle.Value.Height, source.PixelFormat);
+                var g = Graphics.FromImage(bmpOut);
+                g.DrawImage(source, new Rectangle(0, 0, bmpOut.Size.Width, bmpOut.Size.Height), SubRectangle.Value,
+                    GraphicsUnit.Pixel);
+                g.Dispose();
 
-                    using (var stream = new MemoryStream())
-                    {
-                        bmpOut.Save(stream, ImageFormat.Bmp);
-
-                        return new Bitmap(stream);
-                    }
-                }
+                return bmpOut;
             }
         }
     }
