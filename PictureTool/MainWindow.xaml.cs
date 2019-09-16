@@ -60,6 +60,10 @@ namespace PictureTool
 
         private ObservableCollection<BatchMatchResult> _batchMatchResults = new ObservableCollection<BatchMatchResult>();
 
+        private long _errorCount;
+
+        public long ErrorCount => _errorCount;
+
         public ObservableCollection<BatchMatchResult> BatchMatchResults
         {
             get => _batchMatchResults;
@@ -141,6 +145,9 @@ namespace PictureTool
 
         private void BatchMatchBtn_OnClick(object sender, RoutedEventArgs e)
         {
+            _errorCount = 0;
+            OnPropertyChanged(nameof(ErrorCount));
+
             BatchMatchResults.Clear();
 
             var pictureDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pictures", "Others"));
@@ -167,6 +174,11 @@ namespace PictureTool
                             var matchResult = TemplateMatchLocation(subBitMap, bitMap, value);
                             sw.Stop();
                             var matchMillionSeconds = sw.ElapsedMilliseconds;
+                            if (!string.IsNullOrEmpty(matchResult.Error))
+                            {
+                                Interlocked.Increment(ref _errorCount);
+                                OnPropertyChanged(nameof(ErrorCount));
+                            }
 
                             if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
                             {
@@ -185,6 +197,11 @@ namespace PictureTool
                             var notMatchResult1 = TemplateMatchLocation(notMatch1, bitMap, value);
                             sw.Stop();
                             var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                            if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                            {
+                                Interlocked.Increment(ref _errorCount);
+                                OnPropertyChanged(nameof(ErrorCount));
+                            }
 
                             if (notMatchResult1.Match == true)
                             {
@@ -195,6 +212,11 @@ namespace PictureTool
                             var notMatchResult2 = TemplateMatchLocation(notMatch2, bitMap, value);
                             sw.Stop();
                             var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                            if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                            {
+                                Interlocked.Increment(ref _errorCount);
+                                OnPropertyChanged(nameof(ErrorCount));
+                            }
 
                             if (notMatchResult2.Match == true)
                             {
@@ -205,6 +227,11 @@ namespace PictureTool
                             var notMatchResult3 = TemplateMatchLocation(notMatch3, bitMap, value);
                             sw.Stop();
                             var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                            if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                            {
+                                Interlocked.Increment(ref _errorCount);
+                                OnPropertyChanged(nameof(ErrorCount));
+                            }
 
                             if (notMatchResult3.Match == true)
                             {
@@ -230,6 +257,11 @@ namespace PictureTool
                         var matchResult = SiftMatchLocation(subBitMap, bitMap);
                         sw.Stop();
                         var matchMillionSeconds = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(matchResult.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
                         {
@@ -250,6 +282,11 @@ namespace PictureTool
                         var notMatchResult1 = SiftMatchLocation(notMatch1, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult1.Match == true)
                         {
@@ -260,6 +297,11 @@ namespace PictureTool
                         var notMatchResult2 = SiftMatchLocation(notMatch2, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult2.Match == true)
                         {
@@ -270,6 +312,11 @@ namespace PictureTool
                         var notMatchResult3 = SiftMatchLocation(notMatch3, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult3.Match == true)
                         {
@@ -297,6 +344,11 @@ namespace PictureTool
                         var matchResult = SurfMatchLocation(subBitMap, bitMap);
                         sw.Stop();
                         var matchMillionSeconds = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(matchResult.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
                         {
@@ -317,6 +369,11 @@ namespace PictureTool
                         var notMatchResult1 = SurfMatchLocation(notMatch1, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult1.Match == true)
                         {
@@ -327,6 +384,11 @@ namespace PictureTool
                         var notMatchResult2 = SurfMatchLocation(notMatch2, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult2.Match == true)
                         {
@@ -337,6 +399,11 @@ namespace PictureTool
                         var notMatchResult3 = SurfMatchLocation(notMatch3, bitMap);
                         sw.Stop();
                         var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                        if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+                        }
 
                         if (notMatchResult3.Match == true)
                         {

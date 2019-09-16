@@ -59,7 +59,10 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="大量比较" />
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <TextBlock Text="大量比较  " />
+                <TextBlock Text="{Binding ErrorCount, Mode=OneWay, StringFormat=Error: {0}}" />
+            </StackPanel>
             <DataGrid Grid.Row="1" ItemsSource="{Binding BatchMatchResults}" CanUserDeleteRows="True"
                       CanUserSortColumns="False" CanUserAddRows="False"
                       Margin="3" />
