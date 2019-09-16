@@ -58,7 +58,8 @@ namespace PictureTool
             }
         }
 
-        private ObservableCollection<BatchMatchResult> _batchMatchResults = new ObservableCollection<BatchMatchResult>();
+        private ObservableCollection<BatchMatchResult>
+            _batchMatchResults = new ObservableCollection<BatchMatchResult>();
 
         private long _errorCount;
 
@@ -150,14 +151,19 @@ namespace PictureTool
 
             BatchMatchResults.Clear();
 
-            var pictureDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pictures", "Others"));
+            var pictureDir =
+                new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pictures", "Others"));
             var allPics = pictureDir.GetFiles("*", SearchOption.AllDirectories)
                 .Select(s => new BatchMatchResult(s.FullName)).ToList();
 
-            var taskFactory = new TaskFactory(CancellationToken.None, TaskCreationOptions.LongRunning, TaskContinuationOptions.LongRunning, TaskScheduler.Default);
+            var taskFactory = new TaskFactory(CancellationToken.None, TaskCreationOptions.LongRunning,
+                TaskContinuationOptions.LongRunning, TaskScheduler.Default);
             taskFactory.StartNew(() =>
             {
-                Parallel.ForEach(allPics, batchMatchResult =>
+                Parallel.ForEach(allPics, new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = 3
+                }, batchMatchResult =>
                 {
                     var sw = new Stopwatch();
 
@@ -435,7 +441,8 @@ namespace PictureTool
         /// <param name="bitmap">target bitmap</param>
         /// <param name="templateMatch">template match option</param>
         /// <returns>Target bitmap location</returns>
-        private TemplateMatchResult TemplateMatchLocation(Bitmap wantBitmap, Bitmap bitmap, TemplateMatchModes templateMatch)
+        private TemplateMatchResult TemplateMatchLocation(Bitmap wantBitmap, Bitmap bitmap,
+            TemplateMatchModes templateMatch)
         {
             var result = new TemplateMatchResult
             {
