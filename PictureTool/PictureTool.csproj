@@ -93,6 +93,9 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -110,6 +113,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NLog.Config">
+      <Version>4.6.7</Version>
+    </PackageReference>
     <PackageReference Include="OpenCvSharp4">
       <Version>4.1.0.20190416</Version>
     </PackageReference>

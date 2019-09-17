@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using NLog;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using OpenCvSharp.XFeatures2D;
@@ -22,6 +23,8 @@ namespace PictureTool
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private static ILogger _logger = LogManager.GetCurrentClassLogger();
+
         private List<TemplateMatchResult> _templateMatchResults;
 
         public List<TemplateMatchResult> TemplateMatchResults
@@ -158,277 +161,299 @@ namespace PictureTool
 
             var t = new Thread(ss =>
             {
-                Parallel.ForEach(allPics, new ParallelOptions
+                try
                 {
-                    MaxDegreeOfParallelism = 3
-                }, batchMatchResult =>
+                    Parallel.ForEach(allPics, new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = 3
+                    }, batchMatchResult =>
+                    {
+                        try
+                        {
+                            var sw = new Stopwatch();
+
+                            foreach (TemplateMatchModes value in Enum.GetValues(typeof(TemplateMatchModes)))
+                            {
+                                using (var bitMap = batchMatchResult.GetBitmap())
+                                using (var subBitMap = batchMatchResult.GetSubBitmap())
+                                using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
+                                using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
+                                using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
+                                {
+                                    //判断有效
+                                    sw.Start();
+                                    var matchResult = TemplateMatchLocation(subBitMap, bitMap, value);
+                                    sw.Stop();
+                                    var matchMillionSeconds = sw.ElapsedMilliseconds;
+                                    if (!string.IsNullOrEmpty(matchResult.Error))
+                                    {
+                                        Interlocked.Increment(ref _errorCount);
+                                        OnPropertyChanged(nameof(ErrorCount));
+                                    }
+
+                                    if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (!(matchResult.MaxLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
+                                          matchResult.MaxLocation.Value.X == batchMatchResult.SubRectangle.Value.X &&
+                                          matchResult.MaxLocation.Value.Y == batchMatchResult.SubRectangle.Value.Y))
+                                    {
+                                        continue;
+                                    }
+
+                                    //判断无效
+                                    sw.Restart();
+                                    var notMatchResult1 = TemplateMatchLocation(notMatch1, bitMap, value);
+                                    sw.Stop();
+                                    var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                                    if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                                    {
+                                        Interlocked.Increment(ref _errorCount);
+                                        OnPropertyChanged(nameof(ErrorCount));
+                                    }
+
+                                    if (notMatchResult1.Match == true)
+                                    {
+                                        continue;
+                                    }
+
+                                    sw.Restart();
+                                    var notMatchResult2 = TemplateMatchLocation(notMatch2, bitMap, value);
+                                    sw.Stop();
+                                    var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                                    if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                                    {
+                                        Interlocked.Increment(ref _errorCount);
+                                        OnPropertyChanged(nameof(ErrorCount));
+                                    }
+
+                                    if (notMatchResult2.Match == true)
+                                    {
+                                        continue;
+                                    }
+
+                                    sw.Restart();
+                                    var notMatchResult3 = TemplateMatchLocation(notMatch3, bitMap, value);
+                                    sw.Stop();
+                                    var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                                    if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                                    {
+                                        Interlocked.Increment(ref _errorCount);
+                                        OnPropertyChanged(nameof(ErrorCount));
+                                    }
+
+                                    if (notMatchResult3.Match == true)
+                                    {
+                                        continue;
+                                    }
+
+                                    batchMatchResult.AlgorithmDescription +=
+                                        $"  {value} Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                }
+                            }
+
+                            using (var bitMap = batchMatchResult.GetBitmap())
+                            using (var subBitMap = batchMatchResult.GetSubBitmap())
+                            using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
+                            using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
+                            using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
+                            {
+                                var match = true;
+                                var notMatch = true;
+
+                                //判断有效
+                                sw.Restart();
+                                var matchResult = SiftMatchLocation(subBitMap, bitMap);
+                                sw.Stop();
+                                var matchMillionSeconds = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(matchResult.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
+                                {
+                                    match = false;
+                                }
+
+                                if (!(matchResult.MatchLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
+                                      Math.Abs(matchResult.MatchLocation.Value.X - batchMatchResult.SubRectangle.Value.X) <
+                                      float.Epsilon &&
+                                      Math.Abs(matchResult.MatchLocation.Value.Y - batchMatchResult.SubRectangle.Value.Y) <
+                                      float.Epsilon))
+                                {
+                                    match = false;
+                                }
+
+                                //判断无效
+                                sw.Restart();
+                                var notMatchResult1 = SiftMatchLocation(notMatch1, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult1.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                sw.Restart();
+                                var notMatchResult2 = SiftMatchLocation(notMatch2, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult2.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                sw.Restart();
+                                var notMatchResult3 = SiftMatchLocation(notMatch3, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult3.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                if (match && notMatch)
+                                {
+                                    batchMatchResult.AlgorithmDescription +=
+                                        $"  Sift Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                }
+                            }
+
+                            using (var bitMap = batchMatchResult.GetBitmap())
+                            using (var subBitMap = batchMatchResult.GetSubBitmap())
+                            using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
+                            using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
+                            using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
+                            {
+                                var match = true;
+                                var notMatch = true;
+
+                                //判断有效
+                                sw.Restart();
+                                var matchResult = SurfMatchLocation(subBitMap, bitMap);
+                                sw.Stop();
+                                var matchMillionSeconds = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(matchResult.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
+                                {
+                                    match = false;
+                                }
+
+                                if (!(matchResult.MatchLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
+                                      Math.Abs(matchResult.MatchLocation.Value.X - batchMatchResult.SubRectangle.Value.X) <
+                                      float.Epsilon &&
+                                      Math.Abs(matchResult.MatchLocation.Value.Y - batchMatchResult.SubRectangle.Value.Y) <
+                                      float.Epsilon))
+                                {
+                                    match = false;
+                                }
+
+                                //判断无效
+                                sw.Restart();
+                                var notMatchResult1 = SurfMatchLocation(notMatch1, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult1.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult1.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                sw.Restart();
+                                var notMatchResult2 = SurfMatchLocation(notMatch2, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult2.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult2.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                sw.Restart();
+                                var notMatchResult3 = SurfMatchLocation(notMatch3, bitMap);
+                                sw.Stop();
+                                var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
+                                if (!string.IsNullOrEmpty(notMatchResult3.Error))
+                                {
+                                    Interlocked.Increment(ref _errorCount);
+                                    OnPropertyChanged(nameof(ErrorCount));
+                                }
+
+                                if (notMatchResult3.Match == true)
+                                {
+                                    notMatch = false;
+                                }
+
+                                if (match && notMatch)
+                                {
+                                    batchMatchResult.AlgorithmDescription +=
+                                        $"  Surf Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
+                                }
+                            }
+
+                            Application.Current.Dispatcher?.Invoke(() => { BatchMatchResults.Add(batchMatchResult); });
+                        }
+                        catch (Exception exception)
+                        {
+                            Interlocked.Increment(ref _errorCount);
+                            OnPropertyChanged(nameof(ErrorCount));
+
+                            Debug.WriteLine(exception);
+                            _logger.Error(exception);
+                        }
+                    });
+
+                    Application.Current.Dispatcher?.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            $"共检查{allPics.Count}个文件，失效{allPics.Count(s => string.IsNullOrEmpty(s.AlgorithmDescription))}个");
+                    });
+                }
+                catch (Exception exception)
                 {
-                    var sw = new Stopwatch();
+                    Interlocked.Increment(ref _errorCount);
+                    OnPropertyChanged(nameof(ErrorCount));
 
-                    foreach (TemplateMatchModes value in Enum.GetValues(typeof(TemplateMatchModes)))
-                    {
-                        using (var bitMap = batchMatchResult.GetBitmap())
-                        using (var subBitMap = batchMatchResult.GetSubBitmap())
-                        using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
-                        using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
-                        using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
-                        {
-                            //判断有效
-                            sw.Start();
-                            var matchResult = TemplateMatchLocation(subBitMap, bitMap, value);
-                            sw.Stop();
-                            var matchMillionSeconds = sw.ElapsedMilliseconds;
-                            if (!string.IsNullOrEmpty(matchResult.Error))
-                            {
-                                Interlocked.Increment(ref _errorCount);
-                                OnPropertyChanged(nameof(ErrorCount));
-                            }
-
-                            if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
-                            {
-                                continue;
-                            }
-
-                            if (!(matchResult.MaxLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
-                                  matchResult.MaxLocation.Value.X == batchMatchResult.SubRectangle.Value.X &&
-                                  matchResult.MaxLocation.Value.Y == batchMatchResult.SubRectangle.Value.Y))
-                            {
-                                continue;
-                            }
-
-                            //判断无效
-                            sw.Restart();
-                            var notMatchResult1 = TemplateMatchLocation(notMatch1, bitMap, value);
-                            sw.Stop();
-                            var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
-                            if (!string.IsNullOrEmpty(notMatchResult1.Error))
-                            {
-                                Interlocked.Increment(ref _errorCount);
-                                OnPropertyChanged(nameof(ErrorCount));
-                            }
-
-                            if (notMatchResult1.Match == true)
-                            {
-                                continue;
-                            }
-
-                            sw.Restart();
-                            var notMatchResult2 = TemplateMatchLocation(notMatch2, bitMap, value);
-                            sw.Stop();
-                            var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
-                            if (!string.IsNullOrEmpty(notMatchResult2.Error))
-                            {
-                                Interlocked.Increment(ref _errorCount);
-                                OnPropertyChanged(nameof(ErrorCount));
-                            }
-
-                            if (notMatchResult2.Match == true)
-                            {
-                                continue;
-                            }
-
-                            sw.Restart();
-                            var notMatchResult3 = TemplateMatchLocation(notMatch3, bitMap, value);
-                            sw.Stop();
-                            var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
-                            if (!string.IsNullOrEmpty(notMatchResult3.Error))
-                            {
-                                Interlocked.Increment(ref _errorCount);
-                                OnPropertyChanged(nameof(ErrorCount));
-                            }
-
-                            if (notMatchResult3.Match == true)
-                            {
-                                continue;
-                            }
-
-                            batchMatchResult.AlgorithmDescription +=
-                                $"  {value} Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
-                        }
-                    }
-
-                    using (var bitMap = batchMatchResult.GetBitmap())
-                    using (var subBitMap = batchMatchResult.GetSubBitmap())
-                    using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
-                    using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
-                    using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
-                    {
-                        var match = true;
-                        var notMatch = true;
-
-                        //判断有效
-                        sw.Restart();
-                        var matchResult = SiftMatchLocation(subBitMap, bitMap);
-                        sw.Stop();
-                        var matchMillionSeconds = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(matchResult.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
-                        {
-                            match = false;
-                        }
-
-                        if (!(matchResult.MatchLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
-                              Math.Abs(matchResult.MatchLocation.Value.X - batchMatchResult.SubRectangle.Value.X) <
-                              float.Epsilon &&
-                              Math.Abs(matchResult.MatchLocation.Value.Y - batchMatchResult.SubRectangle.Value.Y) <
-                              float.Epsilon))
-                        {
-                            match = false;
-                        }
-
-                        //判断无效
-                        sw.Restart();
-                        var notMatchResult1 = SiftMatchLocation(notMatch1, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult1.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult1.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        sw.Restart();
-                        var notMatchResult2 = SiftMatchLocation(notMatch2, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult2.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult2.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        sw.Restart();
-                        var notMatchResult3 = SiftMatchLocation(notMatch3, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult3.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult3.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        if (match && notMatch)
-                        {
-                            batchMatchResult.AlgorithmDescription +=
-                                $"  Sift Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
-                        }
-                    }
-
-                    using (var bitMap = batchMatchResult.GetBitmap())
-                    using (var subBitMap = batchMatchResult.GetSubBitmap())
-                    using (var notMatch1 = new Bitmap("Pictures\\Src1.bmp"))
-                    using (var notMatch2 = new Bitmap("Pictures\\Sub1.bmp"))
-                    using (var notMatch3 = new Bitmap("Pictures\\NotMatch.bmp"))
-                    {
-                        var match = true;
-                        var notMatch = true;
-
-                        //判断有效
-                        sw.Restart();
-                        var matchResult = SurfMatchLocation(subBitMap, bitMap);
-                        sw.Stop();
-                        var matchMillionSeconds = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(matchResult.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (matchResult.Match == false || !string.IsNullOrEmpty(matchResult.Error))
-                        {
-                            match = false;
-                        }
-
-                        if (!(matchResult.MatchLocation.HasValue && batchMatchResult.SubRectangle.HasValue &&
-                              Math.Abs(matchResult.MatchLocation.Value.X - batchMatchResult.SubRectangle.Value.X) <
-                              float.Epsilon &&
-                              Math.Abs(matchResult.MatchLocation.Value.Y - batchMatchResult.SubRectangle.Value.Y) <
-                              float.Epsilon))
-                        {
-                            match = false;
-                        }
-
-                        //判断无效
-                        sw.Restart();
-                        var notMatchResult1 = SurfMatchLocation(notMatch1, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds1 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult1.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult1.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        sw.Restart();
-                        var notMatchResult2 = SurfMatchLocation(notMatch2, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds2 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult2.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult2.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        sw.Restart();
-                        var notMatchResult3 = SurfMatchLocation(notMatch3, bitMap);
-                        sw.Stop();
-                        var notMatchMillionSeconds3 = sw.ElapsedMilliseconds;
-                        if (!string.IsNullOrEmpty(notMatchResult3.Error))
-                        {
-                            Interlocked.Increment(ref _errorCount);
-                            OnPropertyChanged(nameof(ErrorCount));
-                        }
-
-                        if (notMatchResult3.Match == true)
-                        {
-                            notMatch = false;
-                        }
-
-                        if (match && notMatch)
-                        {
-                            batchMatchResult.AlgorithmDescription +=
-                                $"  Surf Y{matchMillionSeconds}:N{(int)((notMatchMillionSeconds1 + notMatchMillionSeconds2 + notMatchMillionSeconds3) / 3)}";
-                        }
-                    }
-
-                    Application.Current.Dispatcher?.Invoke(() => { BatchMatchResults.Add(batchMatchResult); });
-                });
-
-                Application.Current.Dispatcher?.Invoke(() =>
-                {
-                    MessageBox.Show(
-                        $"共检查{allPics.Count}个文件，失效{allPics.Count(s => string.IsNullOrEmpty(s.AlgorithmDescription))}个");
-                });
+                    Debug.WriteLine(exception);
+                    _logger.Error(exception);
+                }
             });
             
             t.Start();
@@ -476,6 +501,7 @@ namespace PictureTool
             {
                 result.Error = ex.Message;
                 Debug.WriteLine(ex);
+                _logger.Error(ex);
             }
 
             return result;
@@ -544,6 +570,8 @@ namespace PictureTool
             catch (Exception ex)
             {
                 result.Error = ex.Message;
+                Debug.WriteLine(ex);
+                _logger.Error(ex);
             }
 
             return result;
@@ -629,6 +657,8 @@ namespace PictureTool
             catch (Exception ex)
             {
                 result.Error = ex.Message;
+                Debug.WriteLine(ex);
+                _logger.Error(ex);
             }
 
             return result;
